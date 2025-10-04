@@ -1,8 +1,9 @@
 import { AQIMeter } from "@/components/AQIMeter";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { AQIChart } from "@/components/AQIChart";
+import { NotificationPanel } from "@/components/NotificationPanel";
 import { Button } from "@/components/ui/button";
-import { Bell, CloudRain, Droplets, Wind, MapPin, LogOut, User } from "lucide-react";
+import { CloudRain, Droplets, Wind, MapPin, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -45,10 +46,7 @@ const Dashboard = () => {
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-              </Button>
+              <NotificationPanel />
               <Button onClick={() => navigate("/prediction")}>
                 Make Prediction
               </Button>
@@ -58,7 +56,7 @@ const Dashboard = () => {
                     <User className="w-5 h-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="bg-card">
                   <DropdownMenuLabel>{user?.name || "User"}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => {

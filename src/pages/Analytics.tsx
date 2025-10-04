@@ -46,7 +46,40 @@ const Analytics = () => {
   ];
 
   const handleDownload = () => {
-    alert("Report download feature would be implemented here");
+    // Generate CSV content
+    let csvContent = "Date,AQI,Temperature\n";
+    
+    if (timeRange === "daily") {
+      dailyData.forEach(item => {
+        csvContent += `${item.date},${item.aqi},${item.temp || ""}\n`;
+      });
+    } else if (timeRange === "weekly") {
+      weeklyData.forEach(item => {
+        csvContent += `${item.week},${item.aqi},\n`;
+      });
+    } else if (timeRange === "monthly") {
+      monthlyData.forEach(item => {
+        csvContent += `${item.month},${item.aqi},\n`;
+      });
+    }
+    
+    // Add city comparison data
+    csvContent += "\nCity Comparison\n";
+    csvContent += "City,AQI\n";
+    cityComparison.forEach(item => {
+      csvContent += `${item.city},${item.aqi}\n`;
+    });
+
+    // Create download link
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `aqi_report_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (

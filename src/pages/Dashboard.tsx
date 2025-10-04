@@ -2,11 +2,21 @@ import { AQIMeter } from "@/components/AQIMeter";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { AQIChart } from "@/components/AQIChart";
 import { Button } from "@/components/ui/button";
-import { Bell, CloudRain, Droplets, Wind, MapPin } from "lucide-react";
+import { Bell, CloudRain, Droplets, Wind, MapPin, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { logout, user } = useAuth();
 
   // Mock data
   const currentAQI = 87;
@@ -42,6 +52,24 @@ const Dashboard = () => {
               <Button onClick={() => navigate("/prediction")}>
                 Make Prediction
               </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon">
+                    <User className="w-5 h-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>{user?.name || "User"}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => {
+                    logout();
+                    navigate("/");
+                  }}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>

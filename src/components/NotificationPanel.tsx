@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Bell, AlertTriangle, CheckCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,15 +15,17 @@ interface Notification {
   message: string;
   time: string;
   location?: string;
+  read: boolean;
 }
 
-const notifications: Notification[] = [
+const initialNotifications: Notification[] = [
   {
     id: "1",
     type: "warning",
     message: "AQI in Chennai reached 180 (Unhealthy)",
     time: "2 hours ago",
     location: "Chennai",
+    read: false,
   },
   {
     id: "2",
@@ -30,6 +33,7 @@ const notifications: Notification[] = [
     message: "Air quality improved in your area",
     time: "5 hours ago",
     location: "Chennai",
+    read: false,
   },
   {
     id: "3",
@@ -37,6 +41,7 @@ const notifications: Notification[] = [
     message: "High pollution expected tomorrow",
     time: "1 day ago",
     location: "Chennai",
+    read: false,
   },
   {
     id: "4",
@@ -44,6 +49,7 @@ const notifications: Notification[] = [
     message: "AQI dropped to healthy levels",
     time: "2 days ago",
     location: "Chennai",
+    read: false,
   },
 ];
 
@@ -59,7 +65,12 @@ const getIcon = (type: Notification["type"]) => {
 };
 
 export const NotificationPanel = () => {
-  const unreadCount = notifications.length;
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markAllAsRead = () => {
+    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  };
 
   return (
     <DropdownMenu>
@@ -121,7 +132,13 @@ export const NotificationPanel = () => {
         </ScrollArea>
         <Separator />
         <div className="p-2 bg-card">
-          <Button variant="ghost" className="w-full text-sm" size="sm">
+          <Button 
+            variant="ghost" 
+            className="w-full text-sm" 
+            size="sm"
+            onClick={markAllAsRead}
+            disabled={unreadCount === 0}
+          >
             Mark all as read
           </Button>
         </div>

@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      predictions: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number | null
+          location: string
+          longitude: number | null
+          predicted_aqi: number
+          prediction_date: string
+          prediction_time: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          location: string
+          longitude?: number | null
+          predicted_aqi: number
+          prediction_date: string
+          prediction_time: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          location?: string
+          longitude?: number | null
+          predicted_aqi?: number
+          prediction_date?: string
+          prediction_time?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

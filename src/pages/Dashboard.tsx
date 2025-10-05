@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { AQIMeter } from "@/components/AQIMeter";
 import { WeatherWidget } from "@/components/WeatherWidget";
 import { AQIChart } from "@/components/AQIChart";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CloudRain, Droplets, Wind, MapPin, LogOut, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,17 +20,70 @@ import {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const [currentAQI, setCurrentAQI] = useState(87);
+  const [chartData, setChartData] = useState<Array<{ time: string; aqi: number }>>([]);
+  const [currentLocation, setCurrentLocation] = useState("Chennai, Tamil Nadu");
 
-  // Mock data
-  const currentAQI = 87;
-  const chartData = [
-    { time: "00:00", aqi: 65 },
-    { time: "04:00", aqi: 58 },
-    { time: "08:00", aqi: 72 },
-    { time: "12:00", aqi: 95 },
-    { time: "16:00", aqi: 102 },
-    { time: "20:00", aqi: 87 },
-  ];
+  useEffect(() => {
+    const fetchPredictions = async () => {
+      if (!user?.id) return;
+
+      const { data, error } = await supabase
+        .from("predictions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error("Error fetching predictions:", error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        // Update current location from latest prediction
+        setCurrentLocation(data[0].location);
+        
+        // Update current AQI from latest prediction
+        setCurrentAQI(data[0].predicted_aqi);
+
+        // Generate chart data from predictions
+        const chartPoints = data.slice(0, 6).reverse().map((pred, index) => ({
+          time: new Date(pred.created_at).toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: false 
+          }),
+          aqi: pred.predicted_aqi,
+        }));
+        
+        setChartData(chartPoints);
+      }
+    };
+
+    fetchPredictions();
+
+    // Subscribe to realtime updates
+    const channel = supabase
+      .channel('predictions_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'predictions',
+          filter: `user_id=eq.${user?.id}`
+        },
+        () => {
+          fetchPredictions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   return (
     <div className="min-h-screen bg-gradient-atmospheric">
@@ -57,10 +112,10 @@ const Dashboard = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-card">
-                  <DropdownMenuLabel>{user?.name || "User"}</DropdownMenuLabel>
+                  <DropdownMenuLabel>{user?.email || "User"}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => {
-                    logout();
+                  <DropdownMenuItem onClick={async () => {
+                    await logout();
                     navigate("/");
                   }}>
                     <LogOut className="w-4 h-4 mr-2" />
@@ -78,7 +133,7 @@ const Dashboard = () => {
         {/* Location */}
         <div className="flex items-center gap-2 mb-6">
           <MapPin className="w-5 h-5 text-primary" />
-          <span className="text-lg font-semibold">Chennai, Tamil Nadu</span>
+          <span className="text-lg font-semibold">{currentLocation}</span>
         </div>
 
         {/* AQI Meter and Weather Widgets */}

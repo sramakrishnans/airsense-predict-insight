@@ -7,11 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { Wind } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import cityBg from "@/assets/city-pollution-bg.jpg";
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { login, isAuthenticated } = useAuth();
+  const { login, signup, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -22,16 +24,35 @@ const Auth = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password);
-    navigate("/dashboard");
+    try {
+      await login(email, password);
+      navigate("/dashboard");
+    } catch (error: any) {
+      toast({
+        title: "Login failed",
+        description: error.message || "Invalid credentials",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    login(email, password, name);
-    navigate("/dashboard");
+    try {
+      await signup(email, password, name);
+      toast({
+        title: "Account created",
+        description: "You can now log in with your credentials",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Signup failed",
+        description: error.message || "Could not create account",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

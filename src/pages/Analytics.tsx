@@ -1,57 +1,73 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Bar, BarChart, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Analytics = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [timeRange, setTimeRange] = useState("daily");
-  const [dailyData, setDailyData] = useState<Array<{ date: string; aqi: number }>>([]);
-  const [predictions, setPredictions] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchPredictions = async () => {
-      if (!user?.id) return;
+  // Mock data
+  const dailyData = [
+    { date: "Mon", aqi: 65, temp: 28 },
+    { date: "Tue", aqi: 58, temp: 29 },
+    { date: "Wed", aqi: 72, temp: 27 },
+    { date: "Thu", aqi: 95, temp: 30 },
+    { date: "Fri", aqi: 102, temp: 31 },
+    { date: "Sat", aqi: 87, temp: 29 },
+    { date: "Sun", aqi: 78, temp: 28 },
+  ];
 
-      const { data, error } = await supabase
-        .from("predictions")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+  const weeklyData = [
+    { week: "Week 1", aqi: 75 },
+    { week: "Week 2", aqi: 82 },
+    { week: "Week 3", aqi: 68 },
+    { week: "Week 4", aqi: 91 },
+  ];
 
-      if (error) {
-        console.error("Error fetching predictions:", error);
-        return;
-      }
+  const monthlyData = [
+    { month: "Jan", aqi: 85 },
+    { month: "Feb", aqi: 78 },
+    { month: "Mar", aqi: 92 },
+    { month: "Apr", aqi: 105 },
+    { month: "May", aqi: 98 },
+    { month: "Jun", aqi: 88 },
+  ];
 
-      if (data) {
-        setPredictions(data);
-        
-        // Process data for daily view (last 7 predictions)
-        const last7 = data.slice(0, 7).reverse();
-        const daily = last7.map((pred, index) => ({
-          date: new Date(pred.created_at).toLocaleDateString('en-US', { weekday: 'short' }),
-          aqi: pred.predicted_aqi,
-        }));
-        setDailyData(daily);
-      }
-    };
-
-    fetchPredictions();
-  }, [user?.id]);
+  const cityComparison = [
+    { city: "Chennai", aqi: 87 },
+    { city: "Mumbai", aqi: 102 },
+    { city: "Delhi", aqi: 156 },
+    { city: "Bangalore", aqi: 65 },
+    { city: "Kolkata", aqi: 118 },
+  ];
 
   const handleDownload = () => {
-    // Generate CSV content from actual predictions
-    let csvContent = "Location,Date,Time,Predicted AQI,Created At\n";
+    // Generate CSV content
+    let csvContent = "Date,AQI,Temperature\n";
     
-    predictions.forEach(pred => {
-      csvContent += `"${pred.location}",${pred.prediction_date},${pred.prediction_time},${pred.predicted_aqi},${new Date(pred.created_at).toLocaleString()}\n`;
+    if (timeRange === "daily") {
+      dailyData.forEach(item => {
+        csvContent += `${item.date},${item.aqi},${item.temp || ""}\n`;
+      });
+    } else if (timeRange === "weekly") {
+      weeklyData.forEach(item => {
+        csvContent += `${item.week},${item.aqi},\n`;
+      });
+    } else if (timeRange === "monthly") {
+      monthlyData.forEach(item => {
+        csvContent += `${item.month},${item.aqi},\n`;
+      });
+    }
+    
+    // Add city comparison data
+    csvContent += "\nCity Comparison\n";
+    csvContent += "City,AQI\n";
+    cityComparison.forEach(item => {
+      csvContent += `${item.city},${item.aqi}\n`;
     });
 
     // Create download link
@@ -59,7 +75,7 @@ const Analytics = () => {
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `aqi_predictions_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute("download", `aqi_report_${timeRange}_${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
@@ -124,43 +140,101 @@ const Analytics = () => {
               </ResponsiveContainer>
             </Card>
 
+            <Card className="p-6 shadow-soft">
+              <h3 className="text-lg font-semibold mb-4">Temperature vs AQI</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={dailyData}>
+                  <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="temp"
+                    stroke="hsl(var(--accent))"
+                    strokeWidth={2}
+                    name="Temperature"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="aqi"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    name="AQI"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
           </TabsContent>
 
           <TabsContent value="weekly" className="space-y-6 mt-6">
-            <Card className="p-6 shadow-soft text-center py-12">
-              <p className="text-muted-foreground">Weekly view coming soon. Keep making predictions to see aggregated data!</p>
+            <Card className="p-6 shadow-soft">
+              <h3 className="text-lg font-semibold mb-4">Last 4 Weeks Average AQI</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={weeklyData}>
+                  <XAxis dataKey="week" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                  />
+                  <Bar dataKey="aqi" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </Card>
           </TabsContent>
 
           <TabsContent value="monthly" className="space-y-6 mt-6">
-            <Card className="p-6 shadow-soft text-center py-12">
-              <p className="text-muted-foreground">Monthly view coming soon. Keep making predictions to see aggregated data!</p>
+            <Card className="p-6 shadow-soft">
+              <h3 className="text-lg font-semibold mb-4">Last 6 Months Average AQI</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={monthlyData}>
+                  <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "var(--radius)",
+                    }}
+                  />
+                  <Bar dataKey="aqi" fill="hsl(var(--accent))" radius={[8, 8, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </Card>
           </TabsContent>
         </Tabs>
 
-        {/* Recent Predictions */}
-        <Card className="p-6 shadow-soft mt-8">
-          <h3 className="text-lg font-semibold mb-4">Recent Predictions</h3>
-          {predictions.length > 0 ? (
-            <div className="space-y-2">
-              {predictions.slice(0, 10).map((pred) => (
-                <div key={pred.id} className="flex justify-between items-center py-2 border-b last:border-0">
-                  <div>
-                    <p className="font-medium">{pred.location}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(pred.created_at).toLocaleDateString()} - {pred.prediction_time}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-lg font-semibold">AQI: {pred.predicted_aqi}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-8">No predictions yet. Make your first prediction!</p>
-          )}
+        {/* City Comparison */}
+        <Card className="p-6 shadow-soft">
+          <h3 className="text-lg font-semibold mb-4">City Comparison (Current AQI)</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={cityComparison} layout="vertical">
+              <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <YAxis
+                type="category"
+                dataKey="city"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "var(--radius)",
+                }}
+              />
+              <Bar dataKey="aqi" fill="hsl(var(--primary))" radius={[0, 8, 8, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </Card>
       </main>
     </div>

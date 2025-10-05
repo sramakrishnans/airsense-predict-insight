@@ -7,91 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AQIMeter } from "@/components/AQIMeter";
 import { ArrowLeft, MapPin, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Prediction = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { user } = useAuth();
   const [predictedAQI, setPredictedAQI] = useState<number | null>(null);
   const [location, setLocation] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  const geocodeLocation = async (locationName: string) => {
-    try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locationName)}&format=json&limit=1`
-      );
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        return {
-          latitude: parseFloat(data[0].lat),
-          longitude: parseFloat(data[0].lon),
-          displayName: data[0].display_name
-        };
-      }
-      return null;
-    } catch (error) {
-      console.error("Geocoding error:", error);
-      return null;
-    }
-  };
-
-  const handlePredict = async (e: React.FormEvent) => {
+  const handlePredict = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      // Geocode location
-      const geoData = await geocodeLocation(location);
-      
-      if (!geoData) {
-        toast({
-          title: "Location not found",
-          description: "Please enter a valid city or location name",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      // Simulate prediction with better algorithm based on location data
-      const baseAQI = Math.floor(Math.random() * 200) + 50;
-      const randomAQI = Math.min(500, Math.max(0, baseAQI));
-      setPredictedAQI(randomAQI);
-
-      // Save to database
-      const { error } = await supabase.from("predictions").insert({
-        user_id: user?.id,
-        location: geoData.displayName,
-        latitude: geoData.latitude,
-        longitude: geoData.longitude,
-        predicted_aqi: randomAQI,
-        prediction_date: date,
-        prediction_time: time,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Prediction saved",
-        description: "Your AQI prediction has been saved successfully",
-      });
-    } catch (error) {
-      console.error("Prediction error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to save prediction. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    // Simulate prediction
+    const randomAQI = Math.floor(Math.random() * 300) + 1;
+    setPredictedAQI(randomAQI);
   };
 
   const getHealthSuggestion = (aqi: number) => {
@@ -150,8 +76,6 @@ const Prediction = () => {
                     id="date"
                     type="date"
                     className="pl-10"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
                     required
                   />
                 </div>
@@ -159,7 +83,7 @@ const Prediction = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="time">Time of Day</Label>
-                <Select value={time} onValueChange={setTime} required>
+                <Select required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
@@ -172,8 +96,8 @@ const Prediction = () => {
                 </Select>
               </div>
 
-              <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
-                {isLoading ? "Predicting..." : "Predict AQI"}
+              <Button type="submit" className="w-full" size="lg">
+                Predict AQI
               </Button>
             </form>
           </Card>
